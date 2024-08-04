@@ -75,11 +75,42 @@ def api_login():
                 response_data = ResponseData(user_data_dict, subject_data_dicts)
                 return jsonify(response_data.__dict__)
             except AttributeError:
+                return jsonify({'error': 'Login failed!! Sorry plz check your credentials!'}), 400
+        else:
+            return jsonify({'error': 'ETLAB not responding !! Error fetching subject attendance!'}), 400
+    else:
+        return jsonify({'error': 'Login failed!! Sorry plz check your credentials!'}), 400
+    
+#only attendance get
+@app.route('/att', methods=['POST'])
+def api_att():
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+    payload = {
+        'LoginForm[username]': username,
+        'LoginForm[password]': password
+    }
+    userSession = requests.session()
+    login_response = userSession.post(url='https://sctce.etlab.in/user/login', data=payload)
+    if login_response.status_code == 200:
+        subject_response = userSession.get('https://sctce.etlab.in/ktuacademics/student/viewattendancesubject/88')
+        if subject_response.status_code == 200:
+            html_subject = BeautifulSoup(subject_response.content, 'html.parser')
+            html_attendance = BeautifulSoup(subject_response.content, 'html.parser')
+            try:
+                subject_by_subs = html_subject.find_all('th', class_='span2')
+                attendance_by_subs = html_attendance.find_all('td', class_='span2')
+                subject_data = [SubjectData(subject.text.strip(), attendance.text.strip()) for subject, attendance in zip(subject_by_subs, attendance_by_subs)]
+                subject_data_dicts = [subject.to_dict() for subject in subject_data]
+                
+                return jsonify({'subject_data': subject_data_dicts})
+            except AttributeError:
                 return jsonify({'error': 'Error parsing profile information.'}), 400
         else:
-            return jsonify({'error': 'Error fetching profile or subject data.'}), 400
+            return jsonify({'error': 'ETLAB not responding !! Error fetching subject attendance!'}), 400
     else:
-        return jsonify({'error': 'Login failed. Please check your credentials.'}), 400
+        return jsonify({'error': 'Login failed!! Sorry plz check your credentials!'}), 400
 
 if __name__ == '__main__':
     app.run()
