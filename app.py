@@ -112,5 +112,35 @@ def api_att():
     else:
         return jsonify({'error': 'Login failed!! Sorry plz check your credentials!'}), 400
 
+#time table
+@app.route('/timetable', methods=['POST'])
+def api_timetable():
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+    payload = {
+        'LoginForm[username]': username,
+        'LoginForm[password]': password
+    }
+    userSession = requests.session()
+    login_response = userSession.post(url='https://sctce.etlab.in/user/login', data=payload)
+    if login_response.status_code == 200:
+        timetable_response = userSession.get('https://sctce.etlab.in/student/timetable')
+        if timetable_response.status_code == 200:
+            html_timetable = BeautifulSoup(timetable_response.content, 'html.parser')
+            timetable_table = html_timetable.find('table', class_='items table table-striped table-bordered')
+            timetable_data = []
+
+            for row in timetable_table.find('tbody').find_all('tr'):
+                day = row.find('td', class_='span2').text.strip()
+                periods = [td.get_text(separator=' ').strip() for td in row.find_all('td')[1:]]
+                timetable_data.append({'day': day, 'periods': periods})
+
+            return jsonify({'timetable': timetable_data})
+        else:
+            return jsonify({'error': 'ETLAB not responding !! Error fetching timetable!'}), 400
+    else:
+        return jsonify({'error': 'Login failed!! Please check your credentials!'}), 400
+
 if __name__ == '__main__':
     app.run()
