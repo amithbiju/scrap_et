@@ -1,11 +1,15 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify,send_file
 from bs4 import BeautifulSoup
 import requests
 from flask_cors import CORS
+import imgkit
+import os
 
 app = Flask(__name__)
 
 CORS(app)
+
+config = imgkit.config(wkhtmltoimage='C:/Program Files/wkhtmltopdf/bin/bin/wkhtmltoimage.exe')
 
 class UserData:
     def __init__(self, username, name, gender, department_id):
@@ -141,6 +145,56 @@ def api_timetable():
             return jsonify({'error': 'ETLAB not responding !! Error fetching timetable!'}), 400
     else:
         return jsonify({'error': 'Login failed!! Please check your credentials!'}), 400
+    
+#test annne
+@app.route('/monthatt', methods=['POST'])
+def api_monthatt():
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+    payload = {
+        'LoginForm[username]': username,
+        'LoginForm[password]': password
+    }
+    userSession = requests.session()
+    login_response = userSession.post(url='https://sctce.etlab.in/user/login', data=payload)
+    the_data = {"semester": 5, "month": 8, "year": 2024}
+    headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+    
+    if login_response.status_code == 200:
+        subject_response = userSession.post('https://sctce.etlab.in/ktuacademics/student/attendance', data=the_data, headers=headers)
+        
+        if subject_response.status_code == 200:
+            html_content = subject_response.content
+            soup = BeautifulSoup(html_content, 'html.parser')
+            
+            # Save HTML content as an image using imgkit
+            options = {
+                'format': 'png',
+                'encoding': "UTF-8"
+            }
+            # Ensure the directory exists
+            save_dir = 'saved_images'
+            if not os.path.exists(save_dir):
+                os.makedirs(save_dir)
+
+            save_path = os.path.join(save_dir, 'attendance4.png')
+            
+            # Remove problematic tags
+            for  tag in soup(['script', 'iframe']):
+                tag.decompose()
+            
+            cleaned_html = str(soup).replace("about:blank", "")
+            simple_html = "<html><body><h1>Hello, World!</h1></body></html>"
+            # Save HTML as an image
+            imgkit.from_string(simple_html, save_path, options=options, config=config)
+            
+            #return jsonify({'image_path': save_path}), 200
+            return send_file(save_path, as_attachment=True),200
+        else:
+            return jsonify({'error': 'ETLAB not responding !! Error fetching subject attendance!'}), 400
+    else:
+        return jsonify({'error': 'Login failed!! Sorry plz check your credentials!'}), 400
 
 if __name__ == '__main__':
     app.run()
