@@ -4,6 +4,9 @@ import requests
 from flask_cors import CORS
 import imgkit
 import os
+import uuid
+from PIL import Image
+
 
 app = Flask(__name__)
 
@@ -152,13 +155,14 @@ def api_monthatt():
     data = request.get_json()
     username = data.get('username')
     password = data.get('password')
+    #month = data.get('month')
     payload = {
         'LoginForm[username]': username,
         'LoginForm[password]': password
     }
     userSession = requests.session()
     login_response = userSession.post(url='https://sctce.etlab.in/user/login', data=payload)
-    the_data = {"semester": 5, "month": 8, "year": 2024}
+    the_data = {"semester": 6, "month": 8, "year": 2024}
     headers = {'Content-Type': 'application/x-www-form-urlencoded'}
     
     if login_response.status_code == 200:
@@ -171,26 +175,41 @@ def api_monthatt():
             # Save HTML content as an image using imgkit
             options = {
                 'format': 'png',
-                'encoding': "UTF-8"
+                'encoding': "UTF-8",
+                "enable-local-file-access": ""
             }
             # Ensure the directory exists
-            save_dir = 'saved_images'
+            save_dir = f"saved_images/{username}"
             if not os.path.exists(save_dir):
                 os.makedirs(save_dir)
-
-            save_path = os.path.join(save_dir, 'attendance4.png')
+            #geting server time
+        
+            save_path = os.path.join(save_dir, f"att_{uuid.uuid4()}.png")
             
             # Remove problematic tags
             for  tag in soup(['script', 'iframe']):
                 tag.decompose()
             
             cleaned_html = str(soup).replace("about:blank", "")
-            simple_html = "<html><body><h1>Hello, World!</h1></body></html>"
+
+            table = str(soup.find('style'))
+            table += str(soup.find('table'))
             # Save HTML as an image
-            imgkit.from_string(simple_html, save_path, options=options, config=config)
+            #imgkit.from_string(cleaned_html, save_path, options=options, config=config)
             
             #return jsonify({'image_path': save_path}), 200
-            return send_file(save_path, as_attachment=True),200
+            #return send_file(save_path, as_attachment=True),200
+            #return send_file(open(save_path, 'rb'), content_type='application/png')
+            #return send_file(save_path, mimetype='image/png')
+            try:
+                #config = imgkit.config(wkhtmltoimage='/path/to/wkhtmltoimage')  # Adjust path as needed
+                imgkit.from_string(str(table), save_path, options=options, config=config)
+                 # Open the saved image and crop it
+                
+
+                return send_file(save_path, mimetype='image/png')
+            except Exception as e:
+                return jsonify({'image_path': save_path}), 200
         else:
             return jsonify({'error': 'ETLAB not responding !! Error fetching subject attendance!'}), 400
     else:
