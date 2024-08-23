@@ -209,7 +209,8 @@ def api_monthatt():
 
                 return send_file(save_path, mimetype='image/png')
             except Exception as e:
-                return jsonify({'image_path': save_path}), 200
+                print(f"Error occurred: {e}")  # Print the error
+                return jsonify({'image_path': save_path, 'error': str(e)}), 400
         else:
             return jsonify({'error': 'ETLAB not responding !! Error fetching subject attendance!'}), 400
     else:
