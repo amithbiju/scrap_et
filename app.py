@@ -5,7 +5,7 @@ from flask_cors import CORS
 import imgkit
 import os
 import uuid
-from PIL import Image
+#from PIL import Image
 
 
 app = Flask(__name__)
