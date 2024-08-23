@@ -2,17 +2,17 @@ from flask import Flask, request, jsonify,send_file
 from bs4 import BeautifulSoup
 import requests
 from flask_cors import CORS
-# import imgkit
-# import os
-# import uuid
-# from PIL import Image
+import imgkit
+import os
+import uuid
+from PIL import Image
 
 
 app = Flask(__name__)
 
 CORS(app)
 
-#config = imgkit.config(wkhtmltoimage='C:/Program Files/wkhtmltopdf/bin/bin/wkhtmltoimage.exe')
+config = imgkit.config(wkhtmltoimage='C:/Program Files/wkhtmltopdf/bin/bin/wkhtmltoimage.exe')
 
 class UserData:
     def __init__(self, username, name, gender, department_id):
@@ -150,70 +150,70 @@ def api_timetable():
         return jsonify({'error': 'Login failed!! Please check your credentials!'}), 400
     
 #test annne
-# @app.route('/monthatt', methods=['POST'])
-# def api_monthatt():
-#     data = request.get_json()
-#     username = data.get('username')
-#     password = data.get('password')
-#     #month = data.get('month')
-#     payload = {
-#         'LoginForm[username]': username,
-#         'LoginForm[password]': password
-#     }
-#     userSession = requests.session()
-#     login_response = userSession.post(url='https://sctce.etlab.in/user/login', data=payload)
-#     the_data = {"semester": 6, "month": 8, "year": 2024}
-#     headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+@app.route('/monthatt', methods=['POST'])
+def api_monthatt():
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+    #month = data.get('month')
+    payload = {
+        'LoginForm[username]': username,
+        'LoginForm[password]': password
+    }
+    userSession = requests.session()
+    login_response = userSession.post(url='https://sctce.etlab.in/user/login', data=payload)
+    the_data = {}#"semester": 6, "month": 8, "year": 2024
+    headers = {'Content-Type': 'application/x-www-form-urlencoded'}
     
-#     if login_response.status_code == 200:
-#         subject_response = userSession.post('https://sctce.etlab.in/ktuacademics/student/attendance', data=the_data, headers=headers)
+    if login_response.status_code == 200:
+        subject_response = userSession.post('https://sctce.etlab.in/ktuacademics/student/attendance', data=the_data, headers=headers)
         
-#         if subject_response.status_code == 200:
-#             html_content = subject_response.content
-#             soup = BeautifulSoup(html_content, 'html.parser')
+        if subject_response.status_code == 200:
+            html_content = subject_response.content
+            soup = BeautifulSoup(html_content, 'html.parser')
             
-#             # Save HTML content as an image using imgkit
-#             options = {
-#                 'format': 'png',
-#                 'encoding': "UTF-8",
-#                 "enable-local-file-access": ""
-#             }
-#             # Ensure the directory exists
-#             save_dir = f"saved_images/{username}"
-#             if not os.path.exists(save_dir):
-#                 os.makedirs(save_dir)
-#             #geting server time
+            # Save HTML content as an image using imgkit
+            options = {
+                'format': 'png',
+                'encoding': "UTF-8",
+                "enable-local-file-access": ""
+            }
+            # Ensure the directory exists
+            save_dir = f"saved_images/{username}"
+            if not os.path.exists(save_dir):
+                os.makedirs(save_dir)
+            #geting server time
         
-#             save_path = os.path.join(save_dir, f"att_{uuid.uuid4()}.png")
+            save_path = os.path.join(save_dir, f"att_{uuid.uuid4()}.png")
             
-#             # Remove problematic tags
-#             for  tag in soup(['script', 'iframe']):
-#                 tag.decompose()
+            # Remove problematic tags
+            for  tag in soup(['script', 'iframe']):
+                tag.decompose()
             
-#             cleaned_html = str(soup).replace("about:blank", "")
+            cleaned_html = str(soup).replace("about:blank", "")
 
-#             table = str(soup.find('style'))
-#             table += str(soup.find('table'))
-#             # Save HTML as an image
-#             #imgkit.from_string(cleaned_html, save_path, options=options, config=config)
+            table = str(soup.find('style'))
+            table += str(soup.find('table'))
+            # Save HTML as an image
+            #imgkit.from_string(cleaned_html, save_path, options=options, config=config)
             
-#             #return jsonify({'image_path': save_path}), 200
-#             #return send_file(save_path, as_attachment=True),200
-#             #return send_file(open(save_path, 'rb'), content_type='application/png')
-#             #return send_file(save_path, mimetype='image/png')
-#             try:
-#                 #config = imgkit.config(wkhtmltoimage='/path/to/wkhtmltoimage')  # Adjust path as needed
-#                 imgkit.from_string(str(table), save_path, options=options, config=config)
-#                  # Open the saved image and crop it
+            #return jsonify({'image_path': save_path}), 200
+            #return send_file(save_path, as_attachment=True),200
+            #return send_file(open(save_path, 'rb'), content_type='application/png')
+            #return send_file(save_path, mimetype='image/png')
+            try:
+                #config = imgkit.config(wkhtmltoimage='/path/to/wkhtmltoimage')  # Adjust path as needed
+                imgkit.from_string(str(table), save_path, options=options, config=config)
+                 # Open the saved image and crop it
                 
 
-#                 return send_file(save_path, mimetype='image/png')
-#             except Exception as e:
-#                 return jsonify({'image_path': save_path}), 200
-#         else:
-#             return jsonify({'error': 'ETLAB not responding !! Error fetching subject attendance!'}), 400
-#     else:
-#         return jsonify({'error': 'Login failed!! Sorry plz check your credentials!'}), 400
+                return send_file(save_path, mimetype='image/png')
+            except Exception as e:
+                return jsonify({'image_path': save_path}), 200
+        else:
+            return jsonify({'error': 'ETLAB not responding !! Error fetching subject attendance!'}), 400
+    else:
+        return jsonify({'error': 'Login failed!! Sorry plz check your credentials!'}), 400
 
 if __name__ == '__main__':
     app.run()
